@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const cors = require('cors');
+const fs = require('fs');
 
 const PORT = process.env.PORT || 8080;
 
@@ -29,11 +30,9 @@ wss.on('connection', (ws, req) => {
             if (text === 'ping') return;
             console.log('Received from client:', text);
             return;
-        }
-    
-        const base64 = message.toString('base64'); // ✅ correct
-        const dataURL = `data:image/png;base64,${base64}`;
-        console.log('Data URL:', dataURL);
+        };
+        fs.writeFileSync('screenshot.png', message);
+        console.log('Saved screenshot.png');
     });
 
     ws.on('close', () => {
@@ -85,6 +84,7 @@ server.listen(PORT, () => {
     console.log(`WebSocket URL: ws://localhost:${PORT}`);
 
 });
+
 
 
 
