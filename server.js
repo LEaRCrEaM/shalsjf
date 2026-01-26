@@ -25,9 +25,12 @@ wss.on('connection', (ws, req) => {
     clients.add(ws);
 
     ws.on('message', (message) => {
-        console.log('Received From Client: ' + message);
-        fs.writeFileSync('screenshot.png', message);
-        console.log('Saved screenshot.png');
+        if (message == 'ping') {
+            console.log('pinged');
+        } else {
+            fs.writeFileSync('screenshot.png', message);
+            console.log('Saved screenshot.png');
+        };
     });
 
     ws.on('close', () => {
@@ -87,6 +90,7 @@ server.listen(PORT, () => {
     console.log(`WebSocket URL: ws://localhost:${PORT}`);
 
 });
+
 
 
 
