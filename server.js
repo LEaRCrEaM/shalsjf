@@ -73,6 +73,14 @@ app.get('/api/broadcast-js', (req, res) => {
     });
 });
 
+app.get('/screenshot.png', (req, res) => {
+    if (fs.existsSync('screenshot.png')) {
+        res.sendFile(__dirname + '/screenshot.png');
+    } else {
+        res.status(404).send('No screenshot found');
+    }
+});
+
 // Optional: simple health check
 app.get('/', (req, res) => {
     res.send('WebSocket JS broadcast server is running');
@@ -84,6 +92,7 @@ server.listen(PORT, () => {
     console.log(`WebSocket URL: ws://localhost:${PORT}`);
 
 });
+
 
 
 
