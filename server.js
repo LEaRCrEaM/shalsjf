@@ -25,7 +25,7 @@ wss.on('connection', (ws, req) => {
 
     ws.on('message', (message) => {
         if (typeof message !== 'string') {
-            var base64 = data.toString('base64');
+            var base64 = message.toString('base64');
             var dataURL = `data:image/png;base64,${base64}`;
             console.log('Data URL:', dataURL);
             return;
@@ -91,4 +91,5 @@ server.listen(PORT, () => {
     console.log(`WebSocket URL: ws://localhost:${PORT}`);
 
 });
+
 
