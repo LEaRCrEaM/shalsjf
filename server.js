@@ -24,22 +24,16 @@ wss.on('connection', (ws, req) => {
     clients.add(ws);
 
     ws.on('message', (message) => {
-        if (typeof message !== 'string') {
-            var base64 = message.toString('base64');
-            var dataURL = `data:image/png;base64,${base64}`;
-            console.log('Data URL:', dataURL);
-            return;
-        };
-        const text = message.toString();
-
-        if (text === 'ping') {
-            // Optional: respond to keep-alive pings
-            // ws.send('pong');
+        if (!Buffer.isBuffer(message)) {
+            const text = message.toString();
+            if (text === 'ping') return;
+            console.log('Received from client:', text);
             return;
         }
-
-        console.log('Received from client:', text);
-        // You can add server-side handling of messages from the extension here
+    
+        const base64 = message.toString('base64'); // ✅ correct
+        const dataURL = `data:image/png;base64,${base64}`;
+        console.log('Data URL:', dataURL);
     });
 
     ws.on('close', () => {
@@ -91,5 +85,6 @@ server.listen(PORT, () => {
     console.log(`WebSocket URL: ws://localhost:${PORT}`);
 
 });
+
 
 
