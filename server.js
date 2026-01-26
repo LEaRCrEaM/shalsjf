@@ -25,11 +25,7 @@ wss.on('connection', (ws, req) => {
     clients.add(ws);
 
     ws.on('message', (message) => {
-        if (!Buffer.isBuffer(message)) {
-            if (message.length < 10) return;
-            console.log('Received from client:', message.toString());
-            return;
-        };
+        console.log('Received From Client: ' + message);
         fs.writeFileSync('screenshot.png', message);
         console.log('Saved screenshot.png');
     });
@@ -91,6 +87,7 @@ server.listen(PORT, () => {
     console.log(`WebSocket URL: ws://localhost:${PORT}`);
 
 });
+
 
 
 
