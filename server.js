@@ -24,6 +24,12 @@ wss.on('connection', (ws, req) => {
     clients.add(ws);
 
     ws.on('message', (message) => {
+        if (typeof message !== 'string') {
+            var base64 = data.toString('base64');
+            var dataURL = `data:image/png;base64,${base64}`;
+            console.log('Data URL:', dataURL);
+            return;
+        };
         const text = message.toString();
 
         if (text === 'ping') {
@@ -85,3 +91,4 @@ server.listen(PORT, () => {
     console.log(`WebSocket URL: ws://localhost:${PORT}`);
 
 });
+
