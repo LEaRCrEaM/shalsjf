@@ -3,7 +3,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const cors = require('cors');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 const app = express();
 app.use(cors());
@@ -83,4 +83,5 @@ app.get('/', (req, res) => {
 server.listen(PORT, () => {
     console.log(`HTTP + WebSocket server listening on port ${PORT}`);
     console.log(`WebSocket URL: ws://localhost:${PORT}`);
+
 });
