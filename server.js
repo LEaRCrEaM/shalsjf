@@ -20,7 +20,7 @@ wss.on('connection', (ws, req) => {
             fs.writeFileSync('screenshot.png', message.substr(6));
             console.log('Saved screenshot.png');
         }*/ else {
-            console.log(message);
+            console.log(message.toString());
         };
     });
     ws.on('close', () => {
