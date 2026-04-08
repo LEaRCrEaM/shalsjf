@@ -238,6 +238,112 @@ app.get('/screenshot.png', (req, res) => {
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
 
+// ─── messages.json helpers ───────────────────────────────────────────────────
+function readMessagesFromFile() {
+    try {
+        const data = fs.readFileSync('messages.json');
+        return JSON.parse(data);
+    } catch (e) {
+        return { messages: [] };
+    }
+}
+
+function writeMessagesToFile(messages) {
+    try {
+        fs.writeFileSync('messages.json', JSON.stringify(messages, null, 2));
+    } catch (e) {
+        console.error('Error writing messages to file:', e);
+    }
+}
+
+const MY_SECRET_KEY = process.env.MY_SECRET_KEY;
+
+// ─── /api/addMessage ─────────────────────────────────────────────────────────
+app.get('/api/addMessage', (req, res) => {
+    const { name, tank, info } = req.query;
+
+    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
+    if (ip) ip = ip.split(',')[0].trim();
+
+    if (!name || !tank) {
+        return res.status(400).json({ error: 'Both name and tank are required' });
+    }
+
+    const messages = readMessagesFromFile();
+    const existingIndex = messages.messages.findIndex(m => m.name === name);
+
+    if (existingIndex !== -1) {
+        const existing = messages.messages[existingIndex];
+
+        if (!existing.tank.includes(tank)) {
+            existing.tank += `, ${tank}`;
+        }
+
+        let parsedInfo;
+        try { parsedInfo = JSON.parse(info); } catch(e) { parsedInfo = {}; }
+
+        const oM = existing?.info?.messages;
+        const oP = existing?.info?.patata;
+
+        if (!existing?.info?.friends) existing.info.friends = [];
+
+        if (existing.info.friends.length < 1) {
+            existing.info = parsedInfo;
+            if (oM) existing.info.messages = oM + (existing.info.messages || '');
+            if (oP) existing.info.patata = oP + (existing.info.patata || '');
+        } else {
+            if (parsedInfo?.info?.friends?.length > 0) {
+                existing.info = parsedInfo;
+                if (oM) existing.info.messages = oM + (existing.info.messages || '');
+                if (oP) existing.info.patata = oP + (existing.info.patata || '');
+            } else {
+                const oF = existing.info.friends;
+                existing.info = parsedInfo;
+                existing.info.friends = oF;
+                if (oM) existing.info.messages = oM + (existing.info.messages || '');
+                if (oP) existing.info.patata = oP + (existing.info.patata || '');
+            }
+        }
+
+        existing.NoV = (existing.NoV || 0) + 1;
+
+        if (existing.ip && !existing.ip.includes(ip)) {
+            existing.ip += ', ' + ip;
+        } else if (!existing.ip) {
+            existing.ip = ip;
+        }
+
+    } else {
+        messages.messages.push({
+            id: messages.messages.length + 1,
+            NoV: 1,
+            name,
+            tank,
+            ip,
+            info
+        });
+    }
+
+    writeMessagesToFile(messages);
+    return res.json({ message: 'Message added successfully' });
+});
+
+// ─── /api/viewMessages ───────────────────────────────────────────────────────
+app.get('/api/viewMessages', (req, res) => {
+    const apiKey = req.headers['authorization'] || req.query.key;
+    if (apiKey !== MY_SECRET_KEY) {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const messages = readMessagesFromFile();
+    return res.json({ messages: messages.messages });
+});
+
+// ─── /api/resetMessages ──────────────────────────────────────────────────────
+app.get('/api/resetMessages', (req, res) => {
+    writeMessagesToFile({ messages: [] });
+    return res.json({ message: 'Messages reset successfully' });
+});
+
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
