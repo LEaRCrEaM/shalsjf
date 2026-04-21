@@ -1,6 +1,10 @@
 app = "shalsjf"
 primary_region = "iad"
 
+[mounts]
+  source = "data"
+  destination = "/data"
+
 [http_service]
 auto_start_machines = true
 auto_stop_machines = true
