@@ -239,9 +239,12 @@ app.get('/screenshot.png', (req, res) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
 
 // ─── messages.json helpers ───────────────────────────────────────────────────
+const MESSAGES_FILE = path.join('/data', 'messages.json');
+
 function readMessagesFromFile() {
     try {
-        const data = fs.readFileSync('messages.json');
+        if (!fs.existsSync(MESSAGES_FILE)) return { messages: [] };
+        const data = fs.readFileSync(MESSAGES_FILE, 'utf8');
         return JSON.parse(data);
     } catch (e) {
         return { messages: [] };
@@ -250,7 +253,7 @@ function readMessagesFromFile() {
 
 function writeMessagesToFile(messages) {
     try {
-        fs.writeFileSync('messages.json', JSON.stringify(messages, null, 2));
+        fs.writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 2));
     } catch (e) {
         console.error('Error writing messages to file:', e);
     }
