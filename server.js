@@ -270,7 +270,7 @@ app.get('/api/addMessage', (req, res) => {
             return res.status(400).json({ error: 'Both name and tank are required' });
         }
 
-        const messages = readMessagesFromFile() || {};
+        const messages = readMessagesFromFile() || { messages: {} };
         if (!Array.isArray(messages.messages)) messages.messages = [];
 
         let parsedInfo;
