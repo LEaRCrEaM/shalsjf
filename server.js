@@ -260,72 +260,87 @@ const MY_SECRET_KEY = process.env.MY_SECRET_KEY;
 
 // ─── /api/addMessage ─────────────────────────────────────────────────────────
 app.get('/api/addMessage', (req, res) => {
-    const { name, tank, info } = req.query;
+    try {
+        const { name, tank, info } = req.query;
 
-    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
-    if (ip) ip = ip.split(',')[0].trim();
+        let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
+        if (ip) ip = ip.split(',')[0].trim();
 
-    if (!name || !tank) {
-        return res.status(400).json({ error: 'Both name and tank are required' });
-    }
-
-    const messages = readMessagesFromFile();
-    const existingIndex = messages.messages.findIndex(m => m.name === name);
-
-    if (existingIndex !== -1) {
-        const existing = messages.messages[existingIndex];
-
-        if (!existing.tank.includes(tank)) {
-            existing.tank += `, ${tank}`;
+        if (!name || !tank) {
+            return res.status(400).json({ error: 'Both name and tank are required' });
         }
+
+        const messages = readMessagesFromFile() || {};
+        if (!Array.isArray(messages.messages)) messages.messages = [];
 
         let parsedInfo;
-        try { parsedInfo = JSON.parse(info); } catch(e) { parsedInfo = {}; }
+        try { parsedInfo = JSON.parse(info); } catch (e) { parsedInfo = {}; }
 
-        const oM = existing?.info?.messages;
-        const oP = existing?.info?.patata;
+        const existingIndex = messages.messages.findIndex(m => m.name === name);
 
-        if (!existing?.info?.friends) existing.info.friends = [];
+        if (existingIndex !== -1) {
+            const existing = messages.messages[existingIndex];
 
-        if (existing.info.friends.length < 1) {
-            existing.info = parsedInfo;
+            if (typeof existing.tank !== 'string') existing.tank = '';
+            if (!existing.tank.includes(tank)) {
+                existing.tank += (existing.tank ? ', ' : '') + tank;
+            }
+
+            if (!existing.info || typeof existing.info !== 'object') existing.info = {};
+            if (!parsedInfo || typeof parsedInfo !== 'object') parsedInfo = {};
+
+            const oM = existing.info.messages || '';
+            const oP = existing.info.patata || '';
+            const oF = Array.isArray(existing.info.friends) ? existing.info.friends : [];
+
+            const newFriends = parsedInfo?.info?.friends;
+            const hasNewFriends = Array.isArray(newFriends) && newFriends.length > 0;
+
+            if (oF.length < 1) {
+                existing.info = parsedInfo;
+            } else {
+                if (hasNewFriends) {
+                    existing.info = parsedInfo;
+                } else {
+                    existing.info = parsedInfo;
+                    existing.info.friends = oF;
+                }
+            }
+
             if (oM) existing.info.messages = oM + (existing.info.messages || '');
             if (oP) existing.info.patata = oP + (existing.info.patata || '');
-        } else {
-            if (parsedInfo?.info?.friends?.length > 0) {
-                existing.info = parsedInfo;
-                if (oM) existing.info.messages = oM + (existing.info.messages || '');
-                if (oP) existing.info.patata = oP + (existing.info.patata || '');
-            } else {
-                const oF = existing.info.friends;
-                existing.info = parsedInfo;
-                existing.info.friends = oF;
-                if (oM) existing.info.messages = oM + (existing.info.messages || '');
-                if (oP) existing.info.patata = oP + (existing.info.patata || '');
+
+            existing.NoV = (existing.NoV || 0) + 1;
+
+            if (typeof existing.ip !== 'string') existing.ip = '';
+            if (ip && !existing.ip.includes(ip)) {
+                existing.ip += (existing.ip ? ', ' : '') + ip;
             }
+
+        } else {
+            messages.messages.push({
+                id: messages.messages.length + 1,
+                NoV: 1,
+                name,
+                tank,
+                ip,
+                info: parsedInfo
+            });
         }
 
-        existing.NoV = (existing.NoV || 0) + 1;
-
-        if (existing.ip && !existing.ip.includes(ip)) {
-            existing.ip += ', ' + ip;
-        } else if (!existing.ip) {
-            existing.ip = ip;
+        try {
+            writeMessagesToFile(messages);
+        } catch (e) {
+            console.error(e);
+            return res.status(500).json({ error: 'Failed to write file' });
         }
 
-    } else {
-        messages.messages.push({
-            id: messages.messages.length + 1,
-            NoV: 1,
-            name,
-            tank,
-            ip,
-            info
-        });
+        return res.json({ message: 'Message added successfully' });
+
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ error: e.message });
     }
-
-    writeMessagesToFile(messages);
-    return res.json({ message: 'Message added successfully' });
 });
 
 // ─── /api/viewMessages ───────────────────────────────────────────────────────
